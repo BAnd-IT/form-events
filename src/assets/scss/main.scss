@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+}
+
+html {
+  height: 100vh;
+  overflow-x: auto;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+.d-flex {
+  display: flex;
+  width: 100%;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.container {
+  margin: 16px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.row {
+  display: flex;
+  margin: -6px -16px;
+}
+
+[class^='col-'] {
+  padding: 6px 16px;
+}
+
+.col-2 {
+  width: calc(100% / 6);
+}
+
+.col-6 {
+  width: calc(100% / 2);
+}
+
+.g-5 {
+  gap: 2em;
+}
+
+.monospace-font {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  color: cornflowerblue;
+}
+
+.scrolled-block {
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .row {
+    flex-direction: column;
+  }
+  [class^='col-'] {
+    width: 100%;
+  }
+}
