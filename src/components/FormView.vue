@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import type { FormData, EventLog } from '../types';
+import type { FormData, EventLog, FieldType, TimeoutHandle } from '../types';
 
 const localPrice = ref(0);
 const localQty = ref(0);
@@ -59,12 +59,18 @@ const localAmount = ref(0);
 const counter = ref(0);
 const isSubmitting = ref(false);
 const events = ref<EventLog[]>([]);
-const changeOrder = ref<('price' | 'qty' | 'amount')[]>([])
+const changeOrder = ref<FieldType[]>(['price', 'qty', 'amount']);
 const localStorageContent = ref('');
 
-let priceTimeout: NodeJS.Timeout | null = null;
-let qtyTimeout: NodeJS.Timeout | null = null;
-let amountTimeout: NodeJS.Timeout | null = null;
+let priceTimeout: TimeoutHandle | null = null;
+let qtyTimeout: TimeoutHandle | null = null;
+let amountTimeout: TimeoutHandle | null = null;
+
+const clearExistingTimeout = (timeout: TimeoutHandle | null) => {
+  if (timeout !== null) {
+    clearTimeout(timeout);
+  }
+};
 
 const updateLocalStorageContent = () => {
     const data = localStorage.getItem('formData');
@@ -124,14 +130,14 @@ const updateChangeOrder = (field: 'price' | 'qty' | 'amount') => {
     }
 };
 
-const getOldestField = (): 'price' | 'qty' | 'amount' | null => {
-    return changeOrder.value.length > 0 ? changeOrder.value[0] : null;
+const getOldestField = (): FieldType | null => {
+  return changeOrder.value[0] || null;
 };
 
 const recalculateOldestField = (changedField: 'price' | 'qty' | 'amount') => {
     const oldestField = getOldestField();
 
-    if (!oldestField || oldestField === changedField) {
+    if (oldestField === null || oldestField === changedField) {
         return;
     }
 
@@ -163,7 +169,7 @@ const handleInputChange = (field: 'price' | 'qty' | 'amount') => {
 
     switch (field) {
         case 'price':
-            if (priceTimeout) clearTimeout(priceTimeout);
+            clearExistingTimeout(priceTimeout);
             priceTimeout = setTimeout(() => {
                 updateChangeOrder(field);
                 recalculateOldestField(field);
@@ -176,7 +182,7 @@ const handleInputChange = (field: 'price' | 'qty' | 'amount') => {
             break;
 
         case 'qty':
-            if (qtyTimeout) clearTimeout(qtyTimeout);
+            clearExistingTimeout(qtyTimeout);
             qtyTimeout = setTimeout(() => {
                 updateChangeOrder(field);
                 recalculateOldestField(field);
@@ -189,7 +195,7 @@ const handleInputChange = (field: 'price' | 'qty' | 'amount') => {
             break;
 
         case 'amount':
-            if (amountTimeout) clearTimeout(amountTimeout);
+            clearExistingTimeout(amountTimeout);
             amountTimeout = setTimeout(() => {
                 updateChangeOrder(field);
                 recalculateOldestField(field);

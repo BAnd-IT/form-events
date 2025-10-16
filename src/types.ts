@@ -13,3 +13,7 @@ export interface EventLog {
   data?:  any;
   localStorage?: string;
 }
+
+export type FieldType = 'price' | 'qty' | 'amount';
+
+export type TimeoutHandle = ReturnType<typeof setTimeout>;
