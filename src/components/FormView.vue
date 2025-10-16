@@ -59,7 +59,7 @@ const localAmount = ref(0);
 const counter = ref(0);
 const isSubmitting = ref(false);
 const events = ref<EventLog[]>([]);
-const lastChangedField = ref<'price' | 'qty' | 'amount' | null>(null);
+const changeOrder = ref<('price' | 'qty' | 'amount')[]>([])
 const localStorageContent = ref('');
 
 let priceTimeout: NodeJS.Timeout | null = null;
@@ -112,20 +112,48 @@ const getEventType = (type: EventLog['type']) => {
     }
 };
 
-const recalculateFields = (changedField: 'price' | 'qty' | 'amount') => {
-    lastChangedField.value = changedField;
+const updateChangeOrder = (field: 'price' | 'qty' | 'amount') => {
+    const index = changeOrder.value.indexOf(field);
+    if (index > -1) {
+        changeOrder.value.splice(index, 1);
+    }
+    changeOrder.value.push(field);
 
-    switch (changedField) {
+    if (changeOrder.value.length > 3) {
+        changeOrder.value = changeOrder.value.slice(-3);
+    }
+};
+
+const getOldestField = (): 'price' | 'qty' | 'amount' | null => {
+    return changeOrder.value.length > 0 ? changeOrder.value[0] : null;
+};
+
+const recalculateOldestField = (changedField: 'price' | 'qty' | 'amount') => {
+    const oldestField = getOldestField();
+
+    if (!oldestField || oldestField === changedField) {
+        return;
+    }
+
+    addEventLog('input_change', `Изменено поле: ${changedField}`, {
+        price: localPrice.value,
+        qty: localQty.value,
+        amount: localAmount.value
+    });
+
+    switch (oldestField) {
         case 'price':
-            localAmount.value = localPrice.value * localQty.value;
+            if (localQty.value !== 0) {
+                localPrice.value = Number((localAmount.value / localQty.value).toFixed(2));
+            }
             break;
         case 'qty':
-            localAmount.value = localPrice.value * localQty.value;
+            if (localPrice.value !== 0) {
+                localQty.value = Number((localAmount.value / localPrice.value).toFixed(2));
+            }
             break;
         case 'amount':
-            if (localQty.value !== 0) {
-                localPrice.value = localAmount.value / localQty.value;
-            }
+            localAmount.value = Number((localPrice.value * localQty.value).toFixed(2));
             break;
     }
 };
@@ -137,7 +165,8 @@ const handleInputChange = (field: 'price' | 'qty' | 'amount') => {
         case 'price':
             if (priceTimeout) clearTimeout(priceTimeout);
             priceTimeout = setTimeout(() => {
-                recalculateFields(field);
+                updateChangeOrder(field);
+                recalculateOldestField(field);
                 addEventLog('input_change', `Изменено поле: ${field}`, {
                     price: localPrice.value,
                     qty: localQty.value,
@@ -149,7 +178,8 @@ const handleInputChange = (field: 'price' | 'qty' | 'amount') => {
         case 'qty':
             if (qtyTimeout) clearTimeout(qtyTimeout);
             qtyTimeout = setTimeout(() => {
-                recalculateFields(field);
+                updateChangeOrder(field);
+                recalculateOldestField(field);
                 addEventLog('input_change', `Изменено поле: ${field}`, {
                     price: localPrice.value,
                     qty: localQty.value,
@@ -161,7 +191,8 @@ const handleInputChange = (field: 'price' | 'qty' | 'amount') => {
         case 'amount':
             if (amountTimeout) clearTimeout(amountTimeout);
             amountTimeout = setTimeout(() => {
-                recalculateFields(field);
+                updateChangeOrder(field);
+                recalculateOldestField(field);
                 addEventLog('input_change', `Изменено поле: ${field}`, {
                     price: localPrice.value,
                     qty: localQty.value,
@@ -211,7 +242,6 @@ const handleSubmit = async () => {
 };
 
 onMounted(() => {
-    updateLocalStorageContent();
     const savedData = localStorage.getItem('formData');
     if (savedData) {
         try {
@@ -224,6 +254,10 @@ onMounted(() => {
             console.error('Ошибка загрузки данных из localStorage:', error);
         }
     }
+
+    changeOrder.value = ['price', 'qty', 'amount'];
+
+    updateLocalStorageContent();
 
     addEventLog('input_change', 'Компонент инициализирован');
 });
